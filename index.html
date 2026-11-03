@@ -199,7 +199,7 @@ document.addEventListener('touchstart',go,{once:true,passive:true});
 document.addEventListener('click',go,{once:true});
 });
 </script>
-<div class="sheet" id="sheet" hidden role="dialog" aria-label="Install app"><div class="sh"><strong data-en="Install the app" data-ar="تثبيت التطبيق">Install the app</strong><p id="shp"></p><button class="btn" type="button" id="shs" hidden style="margin:0 8px 10px 0" data-en="Open share menu" data-ar="فتح قائمة المشاركة">Open share menu</button><button class="btn" type="button" id="shx" data-en="Got it" data-ar="حسنًا">Got it</button></div></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-label="Install app"><div class="sh"><strong data-en="Install the app" data-ar="تثبيت التطبيق">Install the app</strong><p id="shp"></p><p class="note" id="shd" style="margin:0 0 14px"></p><button class="btn" type="button" id="shs" hidden style="margin:0 8px 10px 0" data-en="Open share menu" data-ar="فتح قائمة المشاركة">Open share menu</button><button class="btn" type="button" id="shx" data-en="Got it" data-ar="حسنًا">Got it</button></div></div>
 <button class="botb" id="botb" type="button" aria-label="Chat assistant">💬</button>
 <div class="bot" id="bot" role="dialog" aria-label="Assistant"><div class="bh"><strong data-en="Dimple’s assistant" data-ar="مساعد ديمبل">Dimple’s assistant</strong><button type="button" id="botx" aria-label="Close">✕</button></div>
 <div class="msgs" id="msgs" aria-live="polite"></div><div class="chips" id="chips"></div><input type="file" id="ph" accept="image/*" hidden>
@@ -330,8 +330,10 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){open(false)
 window.dimpleBot=function(k){open(true,1);go(k)};
 var ib=$('inst'),sh=$('shr');
 if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone)ib.hidden=true;
+function diag(){var el=$('shd'),L=ar(),p1=navigator.serviceWorker?navigator.serviceWorker.getRegistration().then(function(r){return r&&r.active?'✓':'✗'}).catch(function(){return'✗'}):Promise.resolve('✗'),p2=fetch('manifest.webmanifest',{cache:'no-store'}).then(function(r){return r.ok?'✓':'✗'}).catch(function(){return'✗'});
+Promise.all([p1,p2]).then(function(v){el.textContent=[(L?'اتصال آمن: ':'Secure (https): ')+(window.isSecureContext?'✓':'✗'),(L?'العامل الخلفي: ':'Service worker: ')+v[0],(L?'ملف التطبيق: ':'Manifest: ')+v[1],(L?'عرض التثبيت من المتصفح: ':'Browser install offer: ')+(window.__dp?'✓':'✗')].join(' · ')})}
 function sheet(on){$('sheet').hidden=!on;if(!on)return;var u=navigator.userAgent,i=/iphone|ipad|ipod/i.test(u),a=/android/i.test(u),w=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|TikTok|Snapchat|; wv\)/i.test(u);
-$('shs').hidden=!(i&&navigator.share);
+$('shs').hidden=!(i&&navigator.share);diag();
 $('shp').textContent=w?(ar()?'أنتِ داخل متصفح تطبيق آخر. افتحي الرابط في كروم أو سفاري ثم اضغطي «تثبيت التطبيق».':'You’re in another app’s browser. Open this link in Chrome or Safari, then tap “Install app”.'):i?(ar()?'على الآيفون يتم التثبيت من المتصفح: اضغطي على زر المشاركة ثم اختاري «إضافة إلى الشاشة الرئيسية».':'On iPhone, installing is done from the browser: tap Share, then choose “Add to Home Screen”.'):a?(ar()?'افتحي قائمة المتصفح (⋮) واختاري «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».':'Open the browser menu (⋮) and choose “Install app” or “Add to Home screen”.'):(ar()?'ابحثي عن أيقونة التثبيت في شريط العنوان، أو افتحي قائمة المتصفح واختاري «تثبيت». (فايرفوكس لا يدعم التثبيت.)':'Look for the install icon in the address bar, or open the browser menu and choose “Install”. (Firefox does not support installing.)')}
 $('shs').onclick=function(){navigator.share({title:document.title,url:location.href}).catch(function(){})};
 $('shx').onclick=function(){sheet(false)};$('sheet').onclick=function(e){if(e.target===this)sheet(false)};
@@ -340,7 +342,10 @@ function gone(){ib.hidden=true;it.hidden=true;sheet(false)}
 window.addEventListener('appinstalled',gone);
 function ready(){if(window.__dp&&!ib.hidden)it.hidden=false}
 document.addEventListener('dpready',ready);ready();
-function doInstall(){var d=window.__dp;if(!d){sheet(true);return}window.__dp=null;d.prompt();if(d.userChoice)d.userChoice.then(function(c){if(c&&c.outcome==='accepted')gone();else it.hidden=true})}
+var waiting=false;
+function doInstall(){var d=window.__dp;
+if(!d){if(waiting)return;waiting=true;var f=function(){if(!waiting)return;waiting=false;document.removeEventListener('dpready',f);if(window.__dp)doInstall();else sheet(true)};document.addEventListener('dpready',f);setTimeout(f,1200);return}
+window.__dp=null;d.prompt();if(d.userChoice)d.userChoice.then(function(c){if(c&&c.outcome==='accepted')gone();else it.hidden=true})}
 ib.onclick=doInstall;it.onclick=doInstall;
 sh.onclick=function(){var u=location.href;if(navigator.share)navigator.share({title:document.title,url:u}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(u)};
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(function(){});
